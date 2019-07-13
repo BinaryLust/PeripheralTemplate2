@@ -10,7 +10,7 @@
 
 
 // interface definition
-interface avalonIo;
+interface avalon_io;
     logic          clk;
     logic          reset;
     logic          read;
@@ -37,8 +37,8 @@ interface avalonIo;
 endinterface
 
 
-module avalonCore(
-    avalonIo.in io
+module avalon_core(
+    avalon_io.in io
     );
 
 
@@ -62,8 +62,8 @@ module avalonCore(
     // combinational logic block
     always_comb begin
         // default values
-        c_io.write_en = core_io.regs{0};
-        c_io.read_en  = core_io.regs{0};
+        c_io.write_en = '{c_io.regs(){1'b0}};
+        c_io.read_en  = '{c_io.regs(){1'b0}};
 
 
         // generate device register read/write signals

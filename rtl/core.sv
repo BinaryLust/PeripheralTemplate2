@@ -19,7 +19,7 @@
 // interface definition
 interface core_io;
 
-    parameter regs = 3;
+    parameter REGS = 3;
 
 
     // clocks and resets
@@ -29,9 +29,9 @@ interface core_io;
 
     // device register lines
     logic  [31:0]  data_in;
-    logic  [31:0]  data_out  [regs-1:0];
-    logic          write_en  [regs-1:0];
-    logic          read_en   [regs-1:0];
+    logic  [31:0]  data_out  [REGS-1:0];
+    logic          write_en  [REGS-1:0];
+    logic          read_en   [REGS-1:0];
 
 
     // interrupt request lines
@@ -49,12 +49,20 @@ interface core_io;
         output  irq_out
     );
 
+
+    // a function to return the number of registers in the interface
+    // you can't just read the parameter for some reason...
+    function integer regs();
+        regs = REGS;
+    endfunction
+
+
 endinterface
 
 
 // core code
 module core(
-    core_io.in io
+    core_io.in  io
     );
 
 
@@ -104,7 +112,7 @@ module core(
     // combinational logic block
     always_comb begin
         // default logic values
-        io.data_out         = core_io.regs[32{0}};   // set all output lines to zero
+        io.data_out         = '{io.regs(){32'b0}};   // set all output lines to zero
         counter_irq_next    = 1'b0;                  // do not signal an interrupt
         counter_next        = counter;               // retain old count value
         counter_en_next     = counter_en;            // retain old data

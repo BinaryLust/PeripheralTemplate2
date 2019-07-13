@@ -1,21 +1,5 @@
 
 
-// counter reg and bit map
-`define reg_counter        0
-`define bits_counter       31:0
-
-// config reg and bit map
-`define reg_config         1
-`define bits_counter_en    0
-`define bits_counter_dir   1
-`define bits_counter_ire   2
-
-// status reg and bit map
-`define reg_status         2
-`define bits_counter_lt_1k 0
-
-
-
 // interface definition
 interface core_io;
 
@@ -70,7 +54,28 @@ module core(
     );
 
     // this is a known value in this case because it is inside the core, so we preset it correctly.
-    parameter REGS = 3;
+    parameter REGS             = 3;
+
+    // reg maps
+    parameter COUNT_REG        = 0;
+    parameter CONFIG_REG       = 1;
+    parameter STATUS_REG       = 2;
+
+    // COUNT_REG bit map
+    parameter COUNT_HIGH       = 31;
+    parameter COUNT_LOW        = 0;
+
+    // CONFIG_REG bit map
+    parameter COUNT_EN_HIGH    = 0;
+    parameter COUNT_EN_LOW     = 0;
+    parameter COUNT_DIR_HIGH   = 1;
+    parameter COUNT_DIR_LOW    = 1;
+    parameter COUNT_IRE_HIGH   = 2;
+    parameter COUNT_IRE_LOW    = 2;
+
+    // STATUS_REG bit map
+    parameter COUNT_LT_1K_HIGH = 0;
+    parameter COUNT_LT_1K_LOW  = 0;
 
 
     // device registers
@@ -119,52 +124,52 @@ module core(
     // combinational logic block
     always_comb begin
         // default logic values
-        io.data_out         = '{REGS{32'b0}};         // set all output lines to zero
-        counter_irq_next    = 1'b0;                   // do not signal an interrupt
-        counter_next        = counter;                // retain old count value
-        counter_en_next     = counter_en;             // retain old data
-        counter_dir_next    = counter_dir;            // retain old data
-        counter_ire_next    = counter_ire;            // retain old data
-        counter_lt_1k_next  = counter_lt_1k;          // retain old data
+        io.data_out         = '{REGS{32'b0}};                // set all output lines to zero
+        counter_irq_next    = 1'b0;                          // do not signal an interrupt
+        counter_next        = counter;                       // retain old count value
+        counter_en_next     = counter_en;                    // retain old data
+        counter_dir_next    = counter_dir;                   // retain old data
+        counter_ire_next    = counter_ire;                   // retain old data
+        counter_lt_1k_next  = counter_lt_1k;                 // retain old data
 
 
         // counter logic
-        if(io.write_en[`reg_counter])
-            counter_next = io.data_in[`bits_counter]; // load new count from bus master
+        if(io.write_en[COUNT_REG])
+            counter_next = io.data_in[COUNT_HIGH:COUNT_LOW]; // load new count from bus master
         else begin
-            if(counter_en) begin                      // if counting is enabled then
+            if(counter_en) begin                             // if counting is enabled then
                 if(counter_dir)
-                    counter_next = counter + 32'd1;   // count up
+                    counter_next = counter + 32'd1;          // count up
                 else
-                    counter_next = counter - 32'd1;   // count down
+                    counter_next = counter - 32'd1;          // count down
             end
         end
 
 
         // config logic
-        if(io.write_en[`reg_config]) begin
-            counter_en_next  = io.data_in[`bits_counter_en];  // load new config value from bus master
-            counter_dir_next = io.data_in[`bits_counter_dir]; // load new config value from bus master
-            counter_ire_next = io.data_in[`bits_counter_ire]; // load new config value from bus master
+        if(io.write_en[CONFIG_REG]) begin
+            counter_en_next  = io.data_in[COUNT_EN_HIGH:COUNT_EN_LOW];   // load new config value from bus master
+            counter_dir_next = io.data_in[COUNT_DIR_HIGH:COUNT_DIR_LOW]; // load new config value from bus master
+            counter_ire_next = io.data_in[COUNT_IRE_HIGH:COUNT_IRE_LOW]; // load new config value from bus master
         end
 
 
         // status logic
-        counter_lt_1k_next = counter < 1000;          // set the less than 1000 status flag if the count is less than 1000
+        counter_lt_1k_next = counter < 1000;                 // set the less than 1000 status flag if the count is less than 1000
 
 
         // interrupt triggering logic
-        if(counter_ire && &counter[15:0])             // trigger an interrupt if interrupts are enabled and
-            counter_irq_next = 1'b1;                  // the lower 16 bits of the counter are set
+        if(counter_ire && &counter[15:0])                    // trigger an interrupt if interrupts are enabled and
+            counter_irq_next = 1'b1;                         // the lower 16 bits of the counter are set
 
 
         // assign output values
-        io.data_out[`reg_counter][`bits_counter]      = counter;
-        io.data_out[`reg_config][`bits_counter_en]    = counter_en;
-        io.data_out[`reg_config][`bits_counter_dir]   = counter_dir;
-        io.data_out[`reg_config][`bits_counter_ire]   = counter_ire;
-        io.data_out[`reg_status][`bits_counter_lt_1k] = counter_lt_1k;
-        io.irq_out                                    = counter_irq;
+        io.data_out[COUNT_REG] [COUNT_HIGH:COUNT_LOW]             = counter;
+        io.data_out[CONFIG_REG][COUNT_EN_HIGH:COUNT_EN_LOW]       = counter_en;
+        io.data_out[CONFIG_REG][COUNT_DIR_HIGH:COUNT_DIR_LOW]     = counter_dir;
+        io.data_out[CONFIG_REG][COUNT_IRE_HIGH:COUNT_IRE_LOW]     = counter_ire;
+        io.data_out[STATUS_REG][COUNT_LT_1K_HIGH:COUNT_LT_1K_LOW] = counter_lt_1k;
+        io.irq_out                                                = counter_irq;
 
     end
 

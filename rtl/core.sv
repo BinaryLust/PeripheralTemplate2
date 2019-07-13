@@ -19,7 +19,8 @@
 // interface definition
 interface core_io;
 
-    parameter REGS = 3;
+    // this must be set on a per core basis
+    parameter REGS = 1;
 
 
     // clocks and resets
@@ -50,12 +51,15 @@ interface core_io;
     );
 
 
-    // a function to return the number of registers in the interface
-    // you can't just read the parameter for some reason...
-    function integer regs();
-        regs = REGS;
-    endfunction
-
+    modport out (
+        output  clk,
+        output  reset,
+        output  data_in,
+        input   data_out,
+        output  write_en,
+        output  read_en,
+        input   irq_out
+    );
 
 endinterface
 
@@ -64,6 +68,9 @@ endinterface
 module core(
     core_io.in  io
     );
+
+    // this is a known value in this case because it is inside the core, so we preset it correctly.
+    parameter REGS = 3;
 
 
     // device registers
@@ -112,13 +119,13 @@ module core(
     // combinational logic block
     always_comb begin
         // default logic values
-        io.data_out         = '{io.regs(){32'b0}};   // set all output lines to zero
-        counter_irq_next    = 1'b0;                  // do not signal an interrupt
-        counter_next        = counter;               // retain old count value
-        counter_en_next     = counter_en;            // retain old data
-        counter_dir_next    = counter_dir;           // retain old data
-        counter_ire_next    = counter_ire;           // retain old data
-        counter_lt_1k_next  = counter_lt_1k;         // retain old data
+        io.data_out         = '{REGS{32'b0}};         // set all output lines to zero
+        counter_irq_next    = 1'b0;                   // do not signal an interrupt
+        counter_next        = counter;                // retain old count value
+        counter_en_next     = counter_en;             // retain old data
+        counter_dir_next    = counter_dir;            // retain old data
+        counter_ire_next    = counter_ire;            // retain old data
+        counter_lt_1k_next  = counter_lt_1k;          // retain old data
 
 
         // counter logic
@@ -143,12 +150,12 @@ module core(
 
 
         // status logic
-        counter_lt_1k_next = counter < 1000;         // set the less than 1000 status flag if the count is less than 1000
+        counter_lt_1k_next = counter < 1000;          // set the less than 1000 status flag if the count is less than 1000
 
 
         // interrupt triggering logic
-        if(counter_ire && &counter[15:0])            // trigger an interrupt if interrupts are enabled and
-            counter_irq_next = 1'b1;                 // the lower 16 bits of the counter are set
+        if(counter_ire && &counter[15:0])             // trigger an interrupt if interrupts are enabled and
+            counter_irq_next = 1'b1;                  // the lower 16 bits of the counter are set
 
 
         // assign output values
